@@ -6,6 +6,11 @@
 class UserController
 {
     /**
+     * статус подтверждения учётной записи
+     */
+	private $isConfirmed = false;
+
+    /**
      * Проверка на наличие прав доступа при попытке авторизации и регистрации
      */
 	public function __construct()
@@ -22,7 +27,6 @@ class UserController
 		$name = '';
 		$email = '';
 		$password = '';
-		$regSuccess = false;
 
 		// если форма отправлена
 		if(isset($_POST['submit']))
@@ -30,15 +34,24 @@ class UserController
 			$name = $_POST['name'];
 			$email = $_POST['email'];
 			$password = $_POST['password'];
+			$siteName = Config::SITE_NAME;
 			
 			// проверка отправленной формы
 			$errors = CheckValid::checkRegForm($name, $email, $password);
 
 			if (empty($errors))
 			{	
+				// создание хеш-кода из имени и пароля пользователя для подтверждения регистрации
+				$hash = md5($name.$password);
 				// запись нового пользователя в БД
-				$regSuccess = User::register($name, $email, $password);
-				header("Location: /regSuccess");
+				$id_user = User::register($name, $email, $password, $hash);
+
+				$message = "Уважаемый $name,<br/> Вы проходите регистрацию на сайте $siteName.<br/> Пройдите по ссылке что бы подтвердить регистрацию http://$siteName/confirm/$id_user/$hash";
+				$successSend = mail($email, 'Подтверждение регистрации', $message);
+
+				$_SESSION['self_reg'] = true;
+
+				header("Location: /regMess");
 			}
 		}
 
@@ -63,7 +76,8 @@ class UserController
 			$errors = CheckValid::checkLoginForm($email, $password);
 
 			if (empty($errors))
-			{
+			{	
+				// авторизация пользователя
 				User::Auth($email, $password);
 				header("Location: /");
 			}
@@ -83,11 +97,29 @@ class UserController
 	}
 
     /**
-     * Action успешной регистрации
+     * Action сообщения подтверждения регистрации
      */
-	public function actionRegSuccess()
+	public function actionRegMess()
 	{
-		$title = 'успех';
+		$title = 'Подтверждение регистрации';
+
+		if($this->isConfirmed != false || !isset($_SESSION['self_reg']))
+			header("Location: /");
+
+		require_once(ROOT.'/views/user/regSuccess.php');
+		return true;
+	}
+
+    /**
+     * Action подтверждения регистрации
+     */
+	public function actionConfirm($user_id, $hashReg)
+	{
+		if($this->isConfirmed != false || !isset($_SESSION['self_reg']))
+			header("Location: /");
+
+		$this->isConfirmed = User::confirmReg($user_id, $hashReg);
+		$title = 'Регистрация подтверждена!';
 
 		require_once(ROOT.'/views/user/regSuccess.php');
 		return true;

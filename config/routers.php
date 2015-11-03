@@ -8,8 +8,10 @@ return array(
 				'login' => 'user/login',
 				// logOut пользователя
 				'logOut' => 'user/logout',
-				// Вывод сообщения об успегной регистрации
-				'regSuccess' => 'user/regSuccess',
+				// сообщение подтверждения регистрации
+				'regMess' => 'user/regMess',
+				// подтверждение регистрации
+				'confirm/([0-9]+)/([a-zA-Z0-9]+)' => 'user/confirm/$1/$2',
 
 				// личный кабинет
 				// загрузка изображения

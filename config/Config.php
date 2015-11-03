@@ -24,4 +24,5 @@ Class Config {
     // другие данные сайта
     const ADMIN_NAME = "Турушев Николай";
     const ADMIN_MAIL = "Tur.Nik.8@mail.ru";
+    const SITE_NAME = "mvc-shop.esy.es";
 }

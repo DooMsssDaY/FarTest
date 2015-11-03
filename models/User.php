@@ -6,9 +6,9 @@ class User
 {
     /**
      * Регистрация нового пользователя
-     * @return Integer <p>кол-во добавленных записей в таблице</p>
+     * @return Integer <p>id добавленного пользователя</p>
      */
-	public static function register($name, $email, $password)
+	public static function register($name, $email, $password, $hash)
 	{	
 		// получение подключения
 		$db = Database::getConnection();
@@ -16,20 +16,75 @@ class User
 		$password = md5($password);
 		// получение полного имени таблицы с учётом префикса
 		$table = Config::DB_tab_prefix."users";
+		//echo $hash;
+		$con = 0;
 
 		// подготовка запроса
-		$result = $db->prepare("INSERT INTO $table(name, email, password) VALUES(?,?,?)") 
+		$result = $db->prepare("INSERT INTO $table(name, email, password, isConfirmed, hash_reg, date) VALUES(?,?,?,?,?,now())") 
 		or die("Не удалось подготовить запросы: (" . $db->errno . ") " . $db->error);
 
 		// пресвоение параметров и выполнение
-		$result->bind_param('sss', $name, $email, $password) or die("Не удалось привязать параметры: (" . $db->errno . ") " . $db->error);
+		$result->bind_param('sssis', $name, $email, $password, $con, $hash) or die("Не удалось привязать параметры: (" . $db->errno . ") " . $db->error);
 		$result->execute() or die("Не удалось выполнить запрос: (" . $db->errno . ") " . $db->error);
 
-		// получение колличеста внесённых записей и закрытие соединения
-		$affected_rows = $result->affected_rows;
+        // получение id внесённой записи и закрытие соединения
+        $insert_id = $result->insert_id;
+        $result->close();
+
+        return $insert_id; 
+	}
+
+    /**
+     * Подтверждение регистрации
+     * @return Integer <p>кол-во обновлённых записей</p>
+     */
+	public static function confirmReg($user_id, $hashReg)
+	{
+		$db = Database::getConnection();
+		$table = Config::DB_tab_prefix."users";
+
+        $result = $db->prepare("UPDATE $table 
+								SET isConfirmed = 1
+								WHERE id = (?) AND hash_reg = (?)") 
+        or die("Не удалось подготовить запросы: (" . $db->errno . ") " . $db->error);
+        
+        $result->bind_param('is', $user_id, $hashReg) or die("Не удалось привязать параметры: (" . $db->errno . ") " . $db->error);
+        $result->execute() or die("Не удалось выполнить запрос: (" . $db->errno . ") " . $db->error);
+
+        $affected_rows = $result->affected_rows;
+        $result->close();
+
+        // удаление идентификатора незаконченой регистрации
+        if (!$affected_rows)
+        	unset($_SESSION['self_reg']);
+
+        return $affected_rows;
+	}
+
+
+    /**
+     * Проверка подтверждёности учётной записи
+     * @return Integer <p>кол-во найденых записей в таблице</p>
+     */
+	public static function checkUserConfirmed($email, $password)
+	{
+		$db = Database::getConnection();
+		$password = md5($password);
+		$table = Config::DB_tab_prefix."users";
+
+		$result = $db->prepare("SELECT COUNT(*) as count
+							  	FROM $table
+							  	WHERE email = (?) AND password = (?) AND isConfirmed = 0")
+		or die("Не удалось подготовить запросы: (" . $db->errno . ") " . $db->error);
+
+		$result->bind_param('ss', $email, $password) or die("Не удалось привязать параметры: (" . $db->errno . ") " . $db->error);
+		$result->execute() or die("Не удалось выполнить запрос: (" . $db->errno . ") " . $db->error);
+
+		$result->bind_result($count);
+		$result->fetch();
 		$result->close();
 
-		return $affected_rows;
+		return $count;
 	}
 
     /**

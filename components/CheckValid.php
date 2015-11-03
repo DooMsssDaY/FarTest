@@ -41,6 +41,9 @@ class CheckValid {
         if (!self::validPassword($password))
             $errors[] = "Пароль должен быть не короче ".Config::MIN_LANGTH_PASS." символов.";
 
+        if (empty($errors) && User::checkUserConfirmed($email, $password)) {
+            $errors[] = "Данная учётная запись ещё не подтверждена пользователем.";
+        }
         if (empty($errors) && !User::checkUserExists($email, $password)) {
             $errors[] = "Пользователь с такой комбинацией email и пароля не существует.";
         }
