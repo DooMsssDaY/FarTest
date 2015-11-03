@@ -70,7 +70,7 @@ class CheckValid {
      * проверка строки
      * @return boolean 
      */
-    private function validString ($string, $min_length, $max_length)
+    private static function validString ($string, $min_length, $max_length)
     {
         if(!is_string($string))
             return false;
