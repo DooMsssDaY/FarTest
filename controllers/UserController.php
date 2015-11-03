@@ -46,7 +46,7 @@ class UserController
 				// запись нового пользователя в БД
 				$id_user = User::register($name, $email, $password, $hash);
 
-				$message = "Уважаемый $name,<br/> Вы проходите регистрацию на сайте $siteName.<br/> Пройдите по ссылке что бы подтвердить регистрацию http://$siteName/confirm/$id_user/$hash";
+				$message = "Уважаемый $name,\nВы проходите регистрацию на сайте $siteName.\nПройдите по ссылке что бы подтвердить регистрацию http://$siteName/confirm/$id_user/$hash";
 				$successSend = mail($email, 'Подтверждение регистрации', $message);
 
 				$_SESSION['self_reg'] = true;
